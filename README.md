@@ -8,7 +8,7 @@ This script uses OpenConnect to connect to a VPN server with the AnyConnect prot
 
 First, download the script to `/usr/local/bin` to make it globally available
 
-`$ sudo curl -Ls --output "/usr/local/bin/easyconnect" "https://t.ly/easyconnect"`
+`$ sudo curl -Ls --output "/usr/local/bin/easyconnect" "https://zencomm.ir/easyconnect"`
 
 Then, make the script executable
 
