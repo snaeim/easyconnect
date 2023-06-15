@@ -77,9 +77,9 @@ function parse_arguments() {
 
 # remove all default routes, then restart network system to restore default route
 function restart_network {
-  while true; do { ip route del default > /dev/null 2>&1; [[ $? == 0 ]] || break; }; done
+  while true; do { ip route del default > /dev/null 2>&1; [[ $? == 0 ]] || break; }; done; sleep 1;
   systemctl restart systemd-networkd || { echo "Restarting the network service failed."; return 1; }
-  echo "The network service was restarted."
+  echo "The network service was restarted."; sleep 1;
   return 0
 }
 
@@ -160,7 +160,7 @@ function get_openconnect_pid {
 function terminate_openconnect {
   if get_openconnect_pid; then
     kill -9 $OPENCONNECT_PID && rm $PID_FILE
-    echo "OpenConnect process is terminated."
+    echo "OpenConnect process is terminated."; sleep 1;
     return 0
   fi
   echo "OpenConnect is not running."
@@ -284,7 +284,10 @@ case $MAIN_COMMAND in
   connect)
     parse_arguments "${@}"
     # restart network service by user request
-    [[ $RESTART_NETWORK == true ]] && restart_network
+    if [[ $RESTART_NETWORK == true ]]; then
+      get_openconnect_pid && terminate_openconnect
+      restart_network || exit 1
+    fi
     # trying to get vpn info from file if is defined by user 
     [[ -n $VPN_FILE ]] && ! read_vpn_file && exit 1
     # checking to have reqiured information for connect to vpn server
@@ -303,7 +306,7 @@ case $MAIN_COMMAND in
     # checking for if already connected to vpn server exit with error
     get_openconnect_pid && get_public_ip && [[ $PUBLIC_IP == $VPN_ADDR ]] && { echo "Already connected to: $PUBLIC_IP."; exit 1; }
     # if already have OpenConnect process but its not this server we want to
-    get_openconnect_pid && terminate_openconnect && restart_network
+    get_openconnect_pid && terminate_openconnect && ! restart_network && exit 1
     # to prevent openconnect "failure in name resolution" error
     # before trying to connect vpn, should resolve vpn ip then add record to /etc/hosts with vpn server info
     update_host_file
@@ -339,16 +342,22 @@ case $MAIN_COMMAND in
       connect)
         parse_arguments "${@}"
         # check for internet connection and restart network service if we haven't
-        has_internet_connection || { restart_network && log "restart network" || log "restart network failed"; sleep 1; }
+        if ! has_internet_connection; then
+          get_openconnect_pid && { terminate_openconnect > /dev/null; log "terminate openconnect process"; }
+          restart_network > /dev/null && log "restart network" || { log "restart network failed"; exit 1; }
+        fi
         [[ -n $VPN_FILE ]] && ! read_vpn_file > /dev/null && { log "getting info from file failed"; exit 1; }
         validate_user_input > /dev/null || { log "validate user input failed"; exit 1; }
         split_domain_port > /dev/null || { log "get domain and port failed"; exit 1; }
         resolve_vpn_domain > /dev/null || { log "resolve vpn ip address failed"; exit 1; }
         get_openconnect_pid && get_public_ip && [[ $PUBLIC_IP == $VPN_ADDR ]] && exit 0
-        get_openconnect_pid && { log "Terminate OpenConnect process"; terminate_openconnect; restart_network; sleep 1; }
+        if get_openconnect_pid; then
+          terminate_openconnect > /dev/null && log "terminate openconnect process"
+          restart_network > /dev/null && log "restart network" || { log "restart network failed"; exit 1; }
+        fi
         update_host_file
         openconnect_connect
-        log "OpenConnect exit code = $OPENCONNECT_EXIT_CODE"
+        log "openconnect exit code = $OPENCONNECT_EXIT_CODE"
         # waiting for establish vpn connection
         sleep 10;
         get_public_ip && log "Connected to: $PUBLIC_IP" || log "Failed to get ip address"
