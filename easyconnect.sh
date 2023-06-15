@@ -113,7 +113,7 @@ function split_domain_port {
 # after call this function ip will be store in $VPN_ADDR
 # to make sure we get ip address check it from multiple dns server
 function resolve_vpn_domain {
-  local -ar DNS_LIST=("8.8.8.8" "1.1.1.1" "46.224.1.43" "194.225.62.80")
+  local -ar DNS_LIST=("8.8.8.8" "1.1.1.1" "9.9.9.9" "46.224.1.43" "194.225.62.80")
   for DNS in ${DNS_LIST[@]}; do
     VPN_ADDR="$(dig +time=3 +short $VPN_DOMAIN @$DNS | grep -E -o '([0-9]{1,3}[\.]){3}[0-9]{1,3}' | head -n 1)"
     [[ $VPN_ADDR =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] && return 0
@@ -125,7 +125,7 @@ function resolve_vpn_domain {
 # get ip address from ip api and store in $PUBLIC_IP
 # to make sure we get ip address check it from multiple ip apis
 function get_public_ip {
-  local -ar IP_APIS=("http://ip-api.com/line?fields=query" "http://icanhazip.com" "http://ident.me" "http://checkip.amazonaws.com")
+  local -ar IP_APIS=("https://ip.me" "http://icanhazip.com" "http://ident.me" "http://checkip.amazonaws.com" "http://ifconfig.co")
   for API in ${IP_APIS[@]}; do
     PUBLIC_IP="$(curl -m 3 -s $API)"
     [[ $PUBLIC_IP =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] && return 0
@@ -220,7 +220,7 @@ function create_keepalive {
 
 # check internet connection with multiple website
 function has_internet_connection {
-  local -ar DOMAINS=("google.com" "bing.com" "yahoo.com" "wikipedia.org")
+  local -ar DOMAINS=("cloudflare.com" "google.com" "bing.com" "yahoo.com" "wikipedia.org")
   for DOMAIN in ${DOMAINS[@]}; do
     nc -zw3 $DOMAIN 443 > /dev/null 2>&1 && return 0
   done
@@ -360,9 +360,9 @@ case $MAIN_COMMAND in
         log "openconnect exit code = $OPENCONNECT_EXIT_CODE"
         # waiting for establish vpn connection
         sleep 10;
-        get_public_ip && log "Connected to: $PUBLIC_IP" || log "Failed to get ip address"
+        get_public_ip && log "connected to: $PUBLIC_IP" || log "get ip address failed"
         ;;
-    	enable)
+      enable)
         parse_arguments "${@}"
         # check for not having keepalive cronjob or user request to replace it
         ! has_keepalive || [[ $REPLACE_KEEPALIVE == true ]] || { echo "Auto-connection already exist."; exit 1; };
