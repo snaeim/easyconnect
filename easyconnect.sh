@@ -78,8 +78,9 @@ function parse_arguments() {
 # remove all default routes, then restart network system to restore default route
 function restart_network {
   while true; do { ip route del default > /dev/null 2>&1; [[ $? == 0 ]] || break; }; done
-  systemctl restart systemd-networkd && return 0
-  return 1
+  systemctl restart systemd-networkd || { echo "Restarting the network service failed."; return 1; }
+  echo "The network service was restarted."
+  return 0
 }
 
 # read VPN_FILE if exist then set VPN_SERVER, VPN_USER, VPN_PASS variables
@@ -338,7 +339,7 @@ case $MAIN_COMMAND in
       connect)
         parse_arguments "${@}"
         # check for internet connection and restart network service if we haven't
-        has_internet_connection || { log "restart network"; restart_network; sleep 1; }
+        has_internet_connection || { restart_network && log "restart network" || log "restart network failed"; sleep 1; }
         [[ -n $VPN_FILE ]] && ! read_vpn_file > /dev/null && { log "getting info from file failed"; exit 1; }
         validate_user_input > /dev/null || { log "validate user input failed"; exit 1; }
         split_domain_port > /dev/null || { log "get domain and port failed"; exit 1; }
