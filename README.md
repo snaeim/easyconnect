@@ -12,7 +12,7 @@ This method uses a **systemd service** to manage your VPN connection. It ensures
 
 Run the following command to generate and activate a systemd service for your OpenConnect VPN:  
 ```bash
-sudo bash -c "$(wget -qO- https://prevue.ir/generate-openconnect-service.sh)"
+sudo bash -c "$(wget -qO- https://raw.githubusercontent.com/snaeim/easyconnect/refs/heads/main/generate-openconnect-service.sh)"
 ```
 
 ## Method 2: Cron-based Script
@@ -23,7 +23,10 @@ This method uses a script that periodically checks your VPN connection and recon
 
 Run the following commands to install the script:
 ```bash
-sudo curl -Ls --output "/usr/local/bin/easyconnect" "http://prevue.ir/easyconnect.sh"
+sudo curl -Ls --output "/usr/local/bin/easyconnect" "https://raw.githubusercontent.com/snaeim/easyconnect/refs/heads/main/easyconnect.sh"
+```
+Make script executable:
+```bash
 sudo chmod +x /usr/local/bin/easyconnect
 ```
 To learn how to use the script, run:
